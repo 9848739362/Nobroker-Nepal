@@ -245,8 +245,9 @@
             <div>
                 <h4 class="text-white font-semibold text-sm mb-3">Contact Support</h4>
                 <p class="text-xs mb-2">Kathmandu Valley, Nepal</p>
-                <p class="text-xs mb-2">Email: support@nobroker.com.np</p>
-                <p class="text-xs">Phone: +977 1-4500000</p>
+                <p class="text-xs mb-2">Email: damodarjoshi124@gmail.com</p>
+                <p class="text-xs mb-1">Phone: +977 1-4500000</p>
+                <p class="text-xs">WhatsApp: <a href="https://wa.me/15673017576" target="_blank" class="hover:text-white underline">+1 567-301-7576</a></p>
             </div>
         </div>
         <div class="max-w-7xl mx-auto border-t border-slate-800 pt-6 text-center text-xs text-gray-500">
@@ -386,8 +387,8 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-1 cursor-pointer">
-                    Publish Property Listing (FREE)
+                <button type="submit" id="publishBtn" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-1 cursor-pointer flex items-center justify-center space-x-2">
+                    <span id="publishBtnText">Publish Property Listing (FREE)</span>
                 </button>
             </form>
         </div>
@@ -844,6 +845,9 @@
         // Image compression integration
         function handlePostProperty(e) {
             e.preventDefault();
+            const btn = document.getElementById('publishBtn');
+            btn.disabled = true;
+            document.getElementById('publishBtnText').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Publishing your property...';
             const thumbInput = document.getElementById('postThumbnailFile').files[0];
             const galleryInput = document.getElementById('postGalleryFiles').files;
 
@@ -854,7 +858,7 @@
                 if (galleryInput && galleryInput.length > 0) {
                     let readCount = 0;
                     Array.from(galleryInput).forEach((file, index) => {
-                        compressImage(file, 800, 0.6, (compressedBase64) => {
+                        compressImage(file, 500, 0.5, (compressedBase64) => {
                             galleryArr[index] = compressedBase64;
                             readCount++;
                             if (readCount === galleryInput.length) {
@@ -869,7 +873,7 @@
 
             if (thumbInput) {
                 // Compress thumbnail to safe size (< 300KB) to stay well under Firestore's 1MB limit
-                compressImage(thumbInput, 600, 0.6, (compressedThumb) => {
+                compressImage(thumbInput, 400, 0.5, (compressedThumb) => {
                     thumbURL = compressedThumb;
                     processGallery();
                 });
@@ -944,10 +948,16 @@
                 document.getElementById('postCity').innerHTML = '<option value="">Select District First</option>';
                 
                 setSearchType(chosenType);
-                showToast("Property published globally to cloud!");
+                showToast("🎉 Your property is successfully published!");
                 document.getElementById('properties').scrollIntoView({ behavior: 'smooth' });
             }).catch((error) => {
                 alert("Error saving property: " + error.message);
+            }).finally(() => {
+                const btn = document.getElementById('publishBtn');
+                if(btn) {
+                    btn.disabled = false;
+                    document.getElementById('publishBtnText').innerText = 'Publish Property Listing (FREE)';
+                }
             });
         }
 
