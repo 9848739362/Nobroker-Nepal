@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoBroker Nepal - For Sale & For Rent Property Without Brokerage in Kathmandu Valley</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS & JS for OpenStreetMap & Interactive Map Picker -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#059669',
+                            dark: '#047857',
+                            light: '#ecfdf5'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <a href="#" class="flex items-center space-x-2">
+                    <span class="text-2xl font-black text-brand tracking-tight">NoBroker</span>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded">NEPAL</span>
+                </a>
+            </div>
+
+            <!-- Top Navigation -->
+            <div class="hidden md:flex items-center space-x-4 text-sm font-medium">
+                <a href="#properties" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition font-semibold flex items-center space-x-2">
+                    <i class="fa-solid fa-house-chimney text-brand"></i>
+                    <span>Current Listings</span>
+                </a>
+                <button onclick="openPostPropertyModal()" class="bg-brand hover:bg-brand-dark text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>List Your Property</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-3 sm:space-x-4 md:hidden">
+                <button onclick="openPostPropertyModal()" class="bg-brand text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition">
+                    List Property
+                </button>
+                <button onclick="toggleMobileMenu()" class="text-gray-700 focus:outline-none p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-t px-4 py-3 space-y-2">
+            <a href="#properties" onclick="toggleMobileMenu();" class="block w-full text-left py-2 font-medium text-gray-700">Current Listings</a>
+            <button onclick="openPostPropertyModal(); toggleMobileMenu();" class="block w-full text-left py-2 font-medium text-brand">List Your Property</button>
+        </div>
+    </header>
+
+    <!-- Hero Search Section -->
+    <section class="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 text-white py-12 px-4 shadow-inner">
+        <div class="max-w-4xl mx-auto text-center space-y-6">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                For Sale & For Rent Real Estate in Kathmandu Valley
+            </h1>
+            <p class="text-gray-300 text-sm sm:text-base">
+                Zero Brokerage. Direct deal with property owners & buyers across Kathmandu, Lalitpur & Bhaktapur.
+            </p>
+
+            <div class="bg-white rounded-xl shadow-2xl p-4 text-gray-800 space-y-4">
+                <div class="flex border-b border-gray-200 pb-2 space-x-4 text-sm font-semibold">
+                    <button onclick="setSearchType('sale')" id="search-tab-sale" class="pb-1 border-b-2 border-brand text-brand font-bold">For Sale</button>
+                    <button onclick="setSearchType('rent')" id="search-tab-rent" class="pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800">For Rent</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div class="relative text-left">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">District</label>
+                        <div class="flex items-center bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5">
+                            <i class="fa-solid fa-map text-brand mr-2"></i>
+                            <select id="filterDistrict" onchange="updateSearchCities()" class="w-full bg-transparent focus:outline-none text-sm font-medium text-gray-700">
+                                <option value="">Select District</option>
+                                <option value="Kathmandu">Kathmandu</option>
+                                <option value="Lalitpur">Lalitpur</option>
+                                <option value="Bhaktapur">Bhaktapur</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="relative text-left">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">City / Municipality</label>
+                        <div class="flex items-center bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5">
+                            <i class="fa-solid fa-city text-brand mr-2"></i>
+                            <select id="filterCity" class="w-full bg-transparent focus:outline-none text-sm font-medium text-gray-700">
+                                <option value="">Select City</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="relative text-left">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Property Category</label>
+                        <div class="flex items-center bg-gray-50 border border-gray-300 rounded-lg px-3 py-2.5">
+                            <i class="fa-solid fa-building text-brand mr-2"></i>
+                            <select id="filterCategory" class="w-full bg-transparent focus:outline-none text-sm font-medium text-gray-700">
+                                <option value="">All Categories</option>
+                                <option value="Independent House">Independent House (Ghar)</option>
+                                <option value="Apartment / Flat">Apartment / Flat</option>
+                                <option value="Land / Plot">Land / Plot (Jaggā)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-end">
+                        <button onclick="applyFilters()" class="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-lg shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Search</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Area: Current Listings -->
+    <main id="properties" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow w-full">
+        <div class="flex flex-col md:flex-row gap-8">
+            
+            <!-- Sidebar Filters -->
+            <aside class="w-full md:w-1/4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit space-y-6">
+                <div class="flex items-center justify-between border-b pb-4">
+                    <h3 class="font-bold text-gray-800 text-lg">Filters</h3>
+                    <button onclick="resetFilters()" class="text-xs text-brand font-semibold hover:underline">Reset All</button>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Max Budget / Price (NPR)</label>
+                    <div class="flex justify-between items-center text-xs font-extrabold text-brand mb-1">
+                        <span id="priceLabel">Rs. 10,00,00,000</span>
+                    </div>
+                    <input type="range" id="priceRange" min="20000" max="100000000" step="500000" value="100000000" oninput="updatePriceLabel(this.value); applyFilters();" class="w-full accent-brand cursor-pointer">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Bedrooms / BHK</label>
+                    <select id="filterBhk" onchange="applyFilters()" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-2.5 text-sm">
+                        <option value="">Any BHK</option>
+                        <option value="1 BHK">1 BHK</option>
+                        <option value="2 BHK">2 BHK</option>
+                        <option value="3 BHK">3 BHK</option>
+                        <option value="4+ BHK">4+ BHK / Villa</option>
+                    </select>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Listed By</label>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="posterType" value="Owner" onchange="applyFilters()" class="rounded text-brand focus:ring-brand">
+                            <span>Direct Owner / Seller</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" name="posterType" value="Agent" onchange="applyFilters()" class="rounded text-brand focus:ring-brand">
+                            <span>Verified Agent</span>
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Property Grid Content -->
+            <div class="w-full md:w-3/4 space-y-6">
+                <div class="flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-sm border border-gray-100">
+                    <div>
+                        <h2 id="resultTitle" class="text-lg font-bold text-gray-800">Current Listings</h2>
+                        <p id="resultCount" class="text-xs text-gray-500">Showing verified listings</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-xs font-medium text-gray-500">Sort By:</label>
+                        <select id="sortBy" onchange="applyFilters()" class="bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium p-2 focus:outline-none focus:border-brand">
+                            <option value="relevance">Relevance</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Property Grid -->
+                <div id="propertyGrid" class="grid grid-cols-1 gap-6">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-4">
+                    <div class="text-gray-300 text-6xl"><i class="fa-solid fa-house-chimney-crack"></i></div>
+                    <h3 class="text-xl font-bold text-gray-800">No properties found matching your criteria</h3>
+                    <p class="text-sm text-gray-500 max-w-md mx-auto">Try adjusting filters or location parameters in Kathmandu Valley.</p>
+                    <button onclick="resetFilters()" class="bg-brand text-white font-semibold text-sm px-6 py-2.5 rounded-lg shadow hover:bg-brand-dark transition">Reset Filters</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-gray-400 py-12 px-4 sm:px-6 lg:px-8 mt-16">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div class="space-y-4">
+                <span class="text-2xl font-black text-white tracking-tight">NoBroker Nepal</span>
+                <p class="text-xs leading-relaxed">Nepal's trusted direct property marketplace with interactive map location tags across Kathmandu, Lalitpur, and Bhaktapur.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-semibold text-sm mb-3">Valley Districts</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#" class="hover:text-white transition">Kathmandu Properties</a></li>
+                    <li><a href="#" class="hover:text-white transition">Lalitpur Properties</a></li>
+                    <li><a href="#" class="hover:text-white transition">Bhaktapur Properties</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-semibold text-sm mb-3">Quick Links</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><a href="#properties" class="hover:text-white transition">Current Listings</a></li>
+                    <li><a href="#" onclick="openPostPropertyModal()" class="hover:text-white transition">List Your Property</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-semibold text-sm mb-3">Contact Support</h4>
+                <p class="text-xs mb-2">Kathmandu Valley, Nepal</p>
+                <p class="text-xs mb-2">Email: support@nobroker.com.np</p>
+                <p class="text-xs">Phone: +977 1-4500000</p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto border-t border-slate-800 pt-6 text-center text-xs text-gray-500">
+            &copy; 2026 NoBroker Nepal. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- MODAL: Property Details & Map View -->
+    <div id="propertyModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            <button onclick="closePropertyModal()" class="absolute top-4 right-4 z-10 w-9 h-9 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: List Your Property Tile -->
+    <div id="postPropertyModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl p-6 relative">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-house-circle-check text-brand mr-2"></i> List Your Property (FREE)</h3>
+                <button onclick="closePostPropertyModal()" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="postPropertyForm" onsubmit="handlePostProperty(event)" class="space-y-4 text-sm">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Listing Type</label>
+                        <select id="postType" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none focus:border-brand">
+                            <option value="sale">For Sale</option>
+                            <option value="rent">For Rent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Property Category</label>
+                        <select id="postCategory" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none focus:border-brand">
+                            <option value="Independent House">Independent House (Ghar)</option>
+                            <option value="Apartment / Flat">Apartment / Flat</option>
+                            <option value="Land / Plot">Land / Plot (Jaggā)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Property Title</label>
+                    <input type="text" id="postTitle" required placeholder="e.g. 4 Anna Land & House in Maharajgunj" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none focus:border-brand">
+                </div>
+
+                <!-- District, City & Street Hierarchy -->
+                <div class="space-y-3 bg-gray-50 p-4 rounded-xl border">
+                    <label class="block font-semibold text-gray-700">Property Location</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">District <span class="text-red-500">*</span></label>
+                            <select id="postDistrict" onchange="updatePostCities()" required class="w-full border rounded-lg p-2 bg-white text-xs">
+                                <option value="">Select District</option>
+                                <option value="Kathmandu">Kathmandu</option>
+                                <option value="Lalitpur">Lalitpur</option>
+                                <option value="Bhaktapur">Bhaktapur</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">City <span class="text-red-500">*</span></label>
+                            <select id="postCity" required class="w-full border rounded-lg p-2 bg-white text-xs">
+                                <option value="">Select District First</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Street <span class="text-red-500">*</span></label>
+                            <input type="text" id="postStreet" required placeholder="Mandikatar Marg" class="w-full border rounded-lg p-2 bg-white text-xs">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Price / Rent (NPR)</label>
+                        <input type="number" id="postPrice" required placeholder="25000000" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Bedrooms</label>
+                        <select id="postBhk" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none">
+                            <option value="1 BHK">1 BHK</option>
+                            <option value="2 BHK">2 BHK</option>
+                            <option value="3 BHK">3 BHK</option>
+                            <option value="4+ BHK">4+ BHK / Villa</option>
+                            <option value="N/A">N/A (Land)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Water Supply</label>
+                        <select id="postWater" class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none">
+                            <option value="Melamchi / Municipal">Melamchi / Municipal</option>
+                            <option value="Boring / Underground">Boring / Underground</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Property Description <span class="text-red-500">*</span></label>
+                    <textarea id="postDescription" rows="3" required placeholder="Provide details about road access, amenities..." class="w-full border rounded-lg p-2.5 bg-gray-50 focus:outline-none"></textarea>
+                </div>
+
+                <!-- Separated Image Sections -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-2 bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-200">
+                        <label class="block font-bold text-xs text-emerald-900 uppercase">1. Thumbnail Image (Main Feed)</label>
+                        <input type="file" id="postThumbnailFile" accept="image/*" required class="w-full text-xs text-gray-500 file:py-1 file:px-2.5 file:rounded-lg file:bg-emerald-600 file:text-white cursor-pointer">
+                    </div>
+                    <div class="space-y-2 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+                        <label class="block font-bold text-xs text-gray-700 uppercase">2. Gallery Images (Details)</label>
+                        <input type="file" id="postGalleryFiles" accept="image/*" multiple class="w-full text-xs text-gray-500 file:py-1 file:px-2.5 file:rounded-lg file:bg-gray-200 file:text-gray-700 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Security PIN for editing -->
+                <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 space-y-1">
+                    <label class="block font-bold text-xs text-amber-900 uppercase">Set Owner Edit Passcode / PIN <span class="text-red-500">*</span></label>
+                    <input type="password" id="postPin" required maxlength="6" placeholder="e.g. 1234" class="w-full border rounded-lg p-2 bg-white text-xs">
+                    <span class="text-[10px] text-amber-700">Remember this PIN. You will need it to edit or mark your listing as sold later.</span>
+                </div>
+
+                <!-- Map Picker -->
+                <div class="space-y-1">
+                    <label class="block font-semibold text-xs text-gray-700">Pin Location on Valley Map</label>
+                    <div id="mapPicker" class="w-full h-40 rounded-xl border border-gray-300 z-10"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Owner Name</label>
+                        <input type="text" id="postOwnerName" required placeholder="Full Name" class="w-full border rounded-lg p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Phone / WhatsApp <span class="text-red-500">*</span></label>
+                        <input type="text" id="postOwnerPhone" required placeholder="+977 9812345678" class="w-full border rounded-lg p-2.5 bg-gray-50">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-1">
+                    Publish Property Listing (FREE)
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Secure Lister Edit Suite -->
+    <div id="editPropertyModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-xl w-full max-h-[95vh] overflow-y-auto shadow-2xl p-6 relative">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-pen-to-square text-brand mr-2"></i> Edit Listing Suite</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="editPropertyForm" onsubmit="handleSaveEdit(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="editPropId">
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Listing Status</label>
+                    <select id="editStatus" class="w-full border rounded-lg p-2.5 bg-gray-50">
+                        <option value="Available">Available (Active)</option>
+                        <option value="Sold">Sold / Rented Out (Closed)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Price / Rent (NPR)</label>
+                    <input type="number" id="editPrice" required class="w-full border rounded-lg p-2.5 bg-gray-50">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Property Description</label>
+                    <textarea id="editDescription" rows="3" required class="w-full border rounded-lg p-2.5 bg-gray-50"></textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="block font-bold text-xs text-gray-700 uppercase">Update Thumbnail</label>
+                        <input type="file" id="editThumbnailFile" accept="image/*" class="w-full text-xs text-gray-500 file:py-1 file:px-2 file:rounded file:bg-brand file:text-white cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block font-bold text-xs text-gray-700 uppercase">Add Gallery Photos</label>
+                        <input type="file" id="editGalleryFiles" accept="image/*" multiple class="w-full text-xs text-gray-500 file:py-1 file:px-2 file:rounded file:bg-gray-200 file:text-gray-700 cursor-pointer">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-2">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 hidden text-sm font-medium transition-all">
+        <span id="toastMsg">Action completed successfully!</span>
+    </div>
+
+    <!-- JavaScript Core & Map Logic -->
+    <script>
+        const valleyData = {
+            "Kathmandu": ["Kathmandu Metropolitan City", "Kirtipur Municipality", "Budhanilkantha Municipality", "Tokha Municipality", "Tarakeshwar Municipality", "Gokarneshwor Municipality", "Kageshwori Manohara Municipality", "Chandragiri Municipality", "Nagarjun Municipality", "Dakshinkali Municipality", "Shankharapur Municipality"],
+            "Lalitpur": ["Lalitpur Metropolitan City", "Godawari Municipality", "Mahalaxmi Municipality", "Konjyosom Rural Municipality", "Bagmati Rural Municipality", "Mahankal Rural Municipality"],
+            "Bhaktapur": ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality", "Changunarayan Municipality"]
+        };
+
+        let properties = [
+            {
+                id: 1,
+                title: "Luxurious 4 BHK Independent House with Lawn in Maharajgunj",
+                type: "sale",
+                category: "Independent House",
+                district: "Kathmandu",
+                city: "Kathmandu Metropolitan City",
+                street: "Maharajgunj Ring Road",
+                bhk: "4+ BHK",
+                price: 65000000,
+                sqft: "3200 sq.ft",
+                waterType: "Melamchi / Municipal",
+                posterType: "Owner",
+                ownerName: "Bishal Thapa",
+                ownerPhone: "+977 9841112233",
+                pin: "1234",
+                status: "Available",
+                lat: 27.7390,
+                lng: 85.3320,
+                thumbnail: "https://placehold.co/600x400/059669/ffffff?text=Maharajgunj+House",
+                gallery: [],
+                description: "Spacious independent house in prime Maharajgunj area. Earthquake resistant construction with 2 car parking.",
+                features: ["Earthquake Resistant", "Car Parking", "Melamchi Line"]
+            },
+            {
+                id: 2,
+                title: "Prime 5 Anna Residential Land for Sale in Lazimpat",
+                type: "sale",
+                category: "Land / Plot",
+                district: "Kathmandu",
+                city: "Kathmandu Metropolitan City",
+                street: "Lazimpat Near Indian Embassy",
+                bhk: "N/A",
+                price: 45000000,
+                sqft: "5 Anna",
+                waterType: "Boring / Underground",
+                posterType: "Owner",
+                ownerName: "Sita Devi Shrestha",
+                ownerPhone: "+977 9811223344",
+                pin: "1234",
+                status: "Available",
+                lat: 27.7215,
+                lng: 85.3210,
+                thumbnail: "https://placehold.co/600x400/10b981/ffffff?text=Lazimpat+Land",
+                gallery: [],
+                description: "Flat residential plot with 13-ft road access, suitable for immediate house construction.",
+                features: ["13ft Road Access", "Peaceful Area", "Clear Title"]
+            }
+        ];
+
+        let clickedInterests = JSON.parse(sessionStorage.getItem('interestedProps') || '{}');
+        let myListings = JSON.parse(localStorage.getItem('myListings') || '{}');
+
+        let currentTab = 'sale';
+        let pickerMap = null;
+        let pickerMarker = null;
+        let selectedLat = 27.7172;
+        let selectedLng = 85.3240;
+
+        window.onload = function() {
+            setSearchType('sale');
+        };
+
+        function updateSearchCities() {
+            const district = document.getElementById('filterDistrict').value;
+            const citySelect = document.getElementById('filterCity');
+            citySelect.innerHTML = '<option value="">Select City</option>';
+            if(district && valleyData[district]) {
+                valleyData[district].forEach(city => {
+                    citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            }
+            applyFilters();
+        }
+
+        function updatePostCities() {
+            const district = document.getElementById('postDistrict').value;
+            const citySelect = document.getElementById('postCity');
+            citySelect.innerHTML = '<option value="">Select City / Municipality</option>';
+            if(district && valleyData[district]) {
+                valleyData[district].forEach(city => {
+                    citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            }
+        }
+
+        function setSearchType(tab) {
+            currentTab = tab;
+            ['sale', 'rent'].forEach(t => {
+                const searchTab = document.getElementById(`search-tab-${t}`);
+                if(searchTab) {
+                    if(t === tab) {
+                        searchTab.className = "pb-1 border-b-2 border-brand text-brand font-bold";
+                    } else {
+                        searchTab.className = "pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800";
+                    }
+                }
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const district = document.getElementById('filterDistrict').value;
+            const city = document.getElementById('filterCity').value;
+            const category = document.getElementById('filterCategory').value;
+            const bhk = document.getElementById('filterBhk').value;
+            const maxPrice = Number(document.getElementById('priceRange').value);
+            const sortBy = document.getElementById('sortBy').value;
+            const selectedPosters = Array.from(document.querySelectorAll('input[name="posterType"]:checked')).map(cb => cb.value);
+
+            let filtered = properties.filter(p => {
+                if(p.type !== currentTab) return false;
+                if(district && p.district !== district) return false;
+                if(city && p.city !== city) return false;
+                if(category && p.category !== category) return false;
+                if(bhk && p.bhk !== bhk) return false;
+                if(p.price > maxPrice) return false;
+                if(selectedPosters.length > 0 && !selectedPosters.includes(p.posterType)) return false;
+                return true;
+            });
+
+            if(sortBy === 'price-low') filtered.sort((a,b) => a.price - b.price);
+            if(sortBy === 'price-high') filtered.sort((a,b) => b.price - a.price);
+
+            renderProperties(filtered);
+        }
+
+        function renderProperties(data) {
+            const grid = document.getElementById('propertyGrid');
+            const emptyState = document.getElementById('emptyState');
+            document.getElementById('resultCount').innerText = `Showing ${data.length} verified listings`;
+
+            if(data.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            grid.innerHTML = data.map(p => {
+                const isContacted = clickedInterests[p.id];
+                const isOwner = myListings[p.id] || false;
+                const isSold = p.status === 'Sold';
+
+                return `
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col sm:flex-row ${isSold ? 'opacity-75' : ''}">
+                    <div class="sm:w-72 h-56 sm:h-auto relative bg-gray-200 flex-shrink-0">
+                        <img src="${p.thumbnail}" alt="${p.title}" class="w-full h-full object-cover">
+                        <span class="absolute top-3 left-3 ${isSold ? 'bg-gray-600' : 'bg-brand'} text-white text-xs font-bold px-2.5 py-1 rounded-md shadow">
+                            ${isSold ? 'SOLD / RENTED' : 'Zero Brokerage'}
+                        </span>
+                    </div>
+                    <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span class="font-semibold text-brand uppercase tracking-wider"><i class="fa-solid fa-location-dot mr-1"></i> ${p.street}, ${p.city}, ${p.district}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium">By ${p.posterType}</span>
+                                    <button onclick="verifyAndOpenEdit(${p.id})" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-lg font-bold transition flex items-center space-x-1">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                        <span>Edit Listing</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-lg hover:text-brand cursor-pointer mb-2" onclick="openPropertyModal(${p.id})">${p.title}</h3>
+                            <div class="text-2xl font-black text-gray-900 mb-3">Rs. ${p.price.toLocaleString()} ${p.type === 'rent' ? '/month' : ''}</div>
+                            
+                            <div class="grid grid-cols-3 gap-2 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 mb-3">
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">Category</span><strong class="text-gray-800">${p.category}</strong></div>
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">BHK / Size</span><strong class="text-gray-800">${p.bhk !== 'N/A' ? p.bhk : p.sqft}</strong></div>
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">Water Supply</span><strong class="text-gray-800">${p.waterType}</strong></div>
+                            </div>
+                            <p class="text-xs text-gray-600 line-clamp-2">${p.description}</p>
+                            
+                            ${isContacted ? `
+                                <div class="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex items-center justify-between">
+                                    <div>
+                                        <span class="block text-emerald-800 font-bold">👤 Owner: ${p.ownerName}</span>
+                                        <span class="text-emerald-700 font-semibold text-sm">📞 ${p.ownerPhone}</span>
+                                    </div>
+                                    <span class="bg-brand text-white px-2.5 py-1 rounded-md font-bold text-[10px]">Contacted ✓</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <button onclick="openPropertyModal(${p.id})" class="text-brand text-sm font-semibold hover:underline flex items-center space-x-1">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <span>View Map & Details</span>
+                            </button>
+                            
+                            ${isSold ? `
+                                <span class="text-xs font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-xl">Listing Closed</span>
+                            ` : isContacted ? `
+                                <a href="tel:${p.ownerPhone}" class="bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow transition flex items-center space-x-2">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <span>Call Owner Now</span>
+                                </a>
+                            ` : `
+                                <button onclick="markInterested(${p.id})" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-5 py-2 rounded-xl shadow transition flex items-center space-x-2">
+                                    <i class="fa-solid fa-heart"></i>
+                                    <span>I'm Interested</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function verifyAndOpenEdit(id) {
+            const p = properties.find(item => item.id === id);
+            if(!p) return;
+
+            // If listed in same browser session, open directly. Otherwise prompt for PIN.
+            if(myListings[id]) {
+                openEditModal(p);
+            } else {
+                const enteredPin = prompt(`Enter the Owner Edit PIN/Passcode set when listing "${p.title}":`);
+                if(enteredPin === p.pin) {
+                    myListings[id] = true;
+                    localStorage.setItem('myListings', JSON.stringify(myListings));
+                    openEditModal(p);
+                } else if(enteredPin !== null) {
+                    alert("Incorrect PIN! Only the property lister can edit this property.");
+                }
+            }
+        }
+
+        function openEditModal(p) {
+            document.getElementById('editPropId').value = p.id;
+            document.getElementById('editStatus').value = p.status || 'Available';
+            document.getElementById('editPrice').value = p.price;
+            document.getElementById('editDescription').value = p.description;
+            document.getElementById('editPropertyModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editPropertyModal').classList.add('hidden');
+        }
+
+        function handleSaveEdit(e) {
+            e.preventDefault();
+            const id = Number(document.getElementById('editPropId').value);
+            const p = properties.find(item => item.id === id);
+            if(!p) return;
+
+            p.status = document.getElementById('editStatus').value;
+            p.price = Number(document.getElementById('editPrice').value);
+            p.description = document.getElementById('editDescription').value;
+
+            const thumbFile = document.getElementById('editThumbnailFile').files[0];
+            const galleryFiles = document.getElementById('editGalleryFiles').files;
+
+            const finishUpdate = () => {
+                closeEditModal();
+                showToast("Listing updated successfully!");
+                applyFilters();
+            };
+
+            if(thumbFile) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    p.thumbnail = evt.target.result;
+                    processGalleryUpdate(p, galleryFiles, finishUpdate);
+                };
+                reader.readAsDataURL(thumbFile);
+            } else {
+                processGalleryUpdate(p, galleryFiles, finishUpdate);
+            }
+        }
+
+        function processGalleryUpdate(p, files, callback) {
+            if(files && files.length > 0) {
+                let readCount = 0;
+                if(!p.gallery) p.gallery = [];
+                Array.from(files).forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        p.gallery.push(evt.target.result);
+                        readCount++;
+                        if(readCount === files.length) callback();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                callback();
+            }
+        }
+
+        function markInterested(id) {
+            const p = properties.find(item => item.id === id);
+            clickedInterests[id] = true;
+            sessionStorage.setItem('interestedProps', JSON.stringify(clickedInterests));
+            showToast("Interest registered! Owner contact unlocked.");
+            applyFilters();
+        }
+
+        function updatePriceLabel(val) {
+            document.getElementById('priceLabel').innerText = `Rs. ${Number(val).toLocaleString()}`;
+        }
+
+        function resetFilters() {
+            document.getElementById('filterDistrict').value = "";
+            document.getElementById('filterCity').innerHTML = '<option value="">Select City</option>';
+            document.getElementById('filterCategory').value = "";
+            document.getElementById('filterBhk').value = "";
+            document.getElementById('priceRange').value = 100000000;
+            document.getElementById('sortBy').value = "relevance";
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updatePriceLabel(100000000);
+            applyFilters();
+        }
+
+        function openPropertyModal(id) {
+            const p = properties.find(item => item.id === id);
+            const isContacted = clickedInterests[p.id];
+            const content = document.getElementById('modalContent');
+            const allModalImages = [p.thumbnail, ...(p.gallery || [])];
+            const imageGalleryHTML = allModalImages.map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl shadow border">`).join('');
+
+            content.innerHTML = `
+                <div class="p-6 space-y-6">
+                    <div>
+                        <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded">${p.type.toUpperCase()} • ${p.category}</span>
+                        <h2 class="text-2xl font-black text-gray-900 mt-2">${p.title}</h2>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot text-brand mr-1"></i> ${p.street}, ${p.city}, ${p.district} District</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${imageGalleryHTML}
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-3xl font-black text-gray-900">Rs. ${p.price.toLocaleString()}</div>
+                            <p class="text-sm text-gray-600 leading-relaxed">${p.description}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t">
+                        <div>
+                            <span class="block text-xs text-gray-400">Direct Owner</span>
+                            <strong class="text-gray-800 text-sm">${p.ownerName}</strong>
+                            ${isContacted ? `<span class="block text-emerald-700 font-bold text-xs mt-0.5">📞 ${p.ownerPhone}</span>` : ''}
+                        </div>
+                        ${isContacted ? `
+                            <a href="tel:${p.ownerPhone}" class="bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow transition">
+                                Call ${p.ownerPhone}
+                            </a>
+                        ` : `
+                            <button onclick="closePropertyModal(); markInterested(${p.id});" class="bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl shadow transition">
+                                I'm Interested & Unlock Contact
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            document.getElementById('propertyModal').classList.remove('hidden');
+        }
+
+        function closePropertyModal() {
+            document.getElementById('propertyModal').classList.add('hidden');
+        }
+
+        function openPostPropertyModal() {
+            document.getElementById('postPropertyModal').classList.remove('hidden');
+            setTimeout(() => {
+                if(!pickerMap) {
+                    pickerMap = L.map('mapPicker').setView([27.7172, 85.3240], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMap);
+                    pickerMarker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(pickerMap);
+                    pickerMarker.on('dragend', function(e) {
+                        const pos = pickerMarker.getLatLng();
+                        selectedLat = pos.lat.toFixed(4);
+                        selectedLng = pos.lng.toFixed(4);
+                    });
+                } else {
+                    pickerMap.invalidateSize();
+                }
+            }, 200);
+        }
+
+        function closePostPropertyModal() {
+            document.getElementById('postPropertyModal').classList.add('hidden');
+        }
+
+        function handlePostProperty(e) {
+            e.preventDefault();
+            const thumbInput = document.getElementById('postThumbnailFile').files[0];
+            const galleryInput = document.getElementById('postGalleryFiles').files;
+
+            let thumbURL = "https://placehold.co/600x400/059669/ffffff?text=Kathmandu+Property";
+            let galleryArr = [];
+
+            const processGallery = () => {
+                if (galleryInput && galleryInput.length > 0) {
+                    let readCount = 0;
+                    Array.from(galleryInput).forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            galleryArr[index] = evt.target.result;
+                            readCount++;
+                            if (readCount === galleryInput.length) {
+                                saveAndPublishProperty(thumbURL, galleryArr);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                } else {
+                    saveAndPublishProperty(thumbURL, galleryArr);
+                }
+            };
+
+            if (thumbInput) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    thumbURL = evt.target.result;
+                    processGallery();
+                };
+                reader.readAsDataURL(thumbInput);
+            } else {
+                processGallery();
+            }
+        }
+
+        function saveAndPublishProperty(thumb, gallery) {
+            const newId = properties.length + 1;
+            const newProp = {
+                id: newId,
+                title: document.getElementById('postTitle').value,
+                type: document.getElementById('postType').value,
+                category: document.getElementById('postCategory').value,
+                district: document.getElementById('postDistrict').value,
+                city: document.getElementById('postCity').value,
+                street: document.getElementById('postStreet').value,
+                bhk: document.getElementById('postBhk').value,
+                price: Number(document.getElementById('postPrice').value),
+                sqft: "1200 sq.ft",
+                waterType: document.getElementById('postWater').value,
+                posterType: "Owner",
+                ownerName: document.getElementById('postOwnerName').value,
+                ownerPhone: document.getElementById('postOwnerPhone').value,
+                pin: document.getElementById('postPin').value,
+                status: "Available",
+                lat: parseFloat(selectedLat),
+                lng: parseFloat(selectedLng),
+                thumbnail: thumb,
+                gallery: gallery,
+                description: document.getElementById('postDescription').value,
+                features: ["Direct Owner", "Verified"]
+            };
+
+            properties.unshift(newProp);
+            // Mark this browser session as the owner
+            myListings[newId] = true;
+            localStorage.setItem('myListings', JSON.stringify(myListings));
+
+            closePostPropertyModal();
+            document.getElementById('postPropertyForm').reset();
+            document.getElementById('postCity').innerHTML = '<option value="">Select District First</option>';
+            showToast("Property published successfully with Edit PIN protection!");
+            applyFilters();
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.add('hidden'); }, 3500);
+        }
+    </script>
+</body>
+</html>
