@@ -480,3 +480,361 @@
             "Kathmandu": ["Kathmandu Metropolitan City", "Kirtipur Municipality", "Budhanilkantha Municipality", "Tokha Municipality", "Tarakeshwar Municipality", "Gokarneshwor Municipality", "Kageshwori Manohara Municipality", "Chandragiri Municipality", "Nagarjun Municipality", "Dakshinkali Municipality", "Shankharapur Municipality"],
             "Lalitpur": ["Lalitpur Metropolitan City", "Godawari Municipality", "Mahalaxmi Municipality", "Konjyosom Rural Municipality", "Bagmati Rural Municipality", "Mahankal Rural Municipality"],
             "Bhaktapur": ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality", "Changunarayan Municipality"]
+        };
+
+        const locationCoords = {
+            "Kathmandu": { lat: 27.7172, lng: 85.3240, zoom: 13 },
+            "Lalitpur": { lat: 27.6588, lng: 85.3247, zoom: 13 },
+            "Bhaktapur": { lat: 27.6710, lng: 85.4298, zoom: 13 },
+            "Kathmandu Metropolitan City": { lat: 27.7172, lng: 85.3240, zoom: 14 },
+            "Budhanilkantha Municipality": { lat: 27.7667, lng: 85.3611, zoom: 14 },
+            "Tokha Municipality": { lat: 27.7500, lng: 85.3167, zoom: 14 },
+            "Kirtipur Municipality": { lat: 27.6792, lng: 85.2764, zoom: 14 },
+            "Lalitpur Metropolitan City": { lat: 27.6588, lng: 85.3247, zoom: 14 },
+            "Godawari Municipality": { lat: 27.5956, lng: 85.3853, zoom: 14 },
+            "Bhaktapur Municipality": { lat: 27.6710, lng: 85.4298, zoom: 14 },
+            "Suryabinayak Municipality": { lat: 27.6431, lng: 85.4256, zoom: 14 }
+        };
+
+        let properties = [];
+        let clickedInterests = JSON.parse(sessionStorage.getItem('interestedProps') || '{}');
+        let myListings = JSON.parse(localStorage.getItem('myListings') || '{}');
+
+        let currentTab = 'sale';
+        let valleyMap = null;
+        let valleyMarkers = [];
+        let pickerMap = null;
+        let pickerMarker = null;
+        let selectedLat = 27.7172;
+        let selectedLng = 85.3240;
+
+        window.onload = function() {
+            setSearchType('sale');
+            initValleyMap();
+            fetchPropertiesFromCloud();
+        };
+
+        function initValleyMap() {
+            if(!valleyMap) {
+                valleyMap = L.map('valleyMap').setView([27.7172, 85.3240], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(valleyMap);
+            }
+        }
+
+        function updateValleyMapMarkers(data) {
+            if(!valleyMap) return;
+            
+            valleyMarkers.forEach(m => valleyMap.removeLayer(m));
+            valleyMarkers = [];
+
+            data.forEach(p => {
+                if(p.lat && p.lng) {
+                    const pinColor = p.type === 'sale' ? '#dc2626' : '#2563eb';
+                    const customIcon = L.divIcon({
+                        className: 'custom-map-pin',
+                        html: `<div style="background-color: ${pinColor}; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 2px solid white; cursor: pointer;"><i class="fa-solid fa-house text-xs"></i></div>`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+
+                    const marker = L.marker([p.lat, p.lng], { icon: customIcon }).addTo(valleyMap);
+                    marker.bindPopup(`<b>${p.title}</b><br>Rs. ${p.price.toLocaleString()}<br><button onclick="openPropertyModal('${p.id}')" class="text-brand font-bold underline mt-1">View Details</button>`);
+                    valleyMarkers.push(marker);
+                }
+            });
+        }
+
+        function resetValleyMapView() {
+            if(valleyMap) {
+                valleyMap.setView([27.7172, 85.3240], 12);
+            }
+        }
+
+        function fetchPropertiesFromCloud() {
+            db.collection("properties").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+                properties = [];
+                snapshot.forEach((doc) => {
+                    properties.push({ id: doc.id, ...doc.data() });
+                });
+                applyFilters();
+            }, (error) => {
+                console.error("Error fetching cloud properties: ", error);
+            });
+        }
+
+        function updateSearchCities() {
+            const district = document.getElementById('filterDistrict').value;
+            const citySelect = document.getElementById('filterCity');
+            citySelect.innerHTML = '<option value="">Select City</option>';
+            if(district && valleyData[district]) {
+                valleyData[district].forEach(city => {
+                    citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            }
+            applyFilters();
+        }
+
+        function updatePostCities() {
+            const district = document.getElementById('postDistrict').value;
+            const citySelect = document.getElementById('postCity');
+            citySelect.innerHTML = '<option value="">Select City</option>';
+            if(district && valleyData[district]) {
+                valleyData[district].forEach(city => {
+                    citySelect.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            }
+        }
+
+        function centerMapOnDistrict() {
+            const district = document.getElementById('postDistrict').value;
+            if(pickerMap && locationCoords[district]) {
+                const loc = locationCoords[district];
+                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
+                pickerMarker.setLatLng([loc.lat, loc.lng]);
+                selectedLat = loc.lat.toFixed(4);
+                selectedLng = loc.lng.toFixed(4);
+            }
+        }
+
+        function centerMapOnCity() {
+            const city = document.getElementById('postCity').value;
+            if(pickerMap && locationCoords[city]) {
+                const loc = locationCoords[city];
+                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
+                pickerMarker.setLatLng([loc.lat, loc.lng]);
+                selectedLat = loc.lat.toFixed(4);
+                selectedLng = loc.lng.toFixed(4);
+            }
+        }
+
+        function setSearchType(tab) {
+            currentTab = tab;
+            ['sale', 'rent'].forEach(t => {
+                const searchTab = document.getElementById(`search-tab-${t}`);
+                if(searchTab) {
+                    if(t === tab) {
+                        searchTab.className = "pb-1 border-b-2 border-brand text-brand font-bold cursor-pointer";
+                    } else {
+                        searchTab.className = "pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-800 cursor-pointer";
+                    }
+                }
+            });
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const district = document.getElementById('filterDistrict').value;
+            const city = document.getElementById('filterCity').value;
+            const category = document.getElementById('filterCategory').value;
+            const bhk = document.getElementById('filterBhk').value;
+            const maxPrice = Number(document.getElementById('priceRange').value);
+            const sortBy = document.getElementById('sortBy').value;
+            const selectedPosters = Array.from(document.querySelectorAll('input[name="posterType"]:checked')).map(cb => cb.value);
+
+            let filtered = properties.filter(p => {
+                if(p.type !== currentTab) return false;
+                if(district && p.district !== district) return false;
+                if(city && p.city !== city) return false;
+                if(category && p.category !== category) return false;
+                if(bhk && p.bhk !== bhk) return false;
+                if(p.price > maxPrice) return false;
+                if(selectedPosters.length > 0 && !selectedPosters.includes(p.posterType)) return false;
+                return true;
+            });
+
+            if(sortBy === 'price-low') filtered.sort((a,b) => a.price - b.price);
+            if(sortBy === 'price-high') filtered.sort((a,b) => b.price - a.price);
+
+            renderProperties(filtered);
+            updateValleyMapMarkers(filtered);
+        }
+
+        function renderProperties(data) {
+            const grid = document.getElementById('propertyGrid');
+            const emptyState = document.getElementById('emptyState');
+            document.getElementById('resultCount').innerText = `Showing ${data.length} verified listings`;
+
+            if(data.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            grid.innerHTML = data.map(p => {
+                const isContacted = clickedInterests[p.id];
+                const isOwner = myListings[p.id] || false;
+                const isSold = p.status === 'Sold';
+                const badgeColor = p.type === 'sale' ? 'bg-red-600' : 'bg-blue-600';
+
+                return `
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition flex flex-col sm:flex-row ${isSold ? 'opacity-75' : ''}">
+                    <div class="sm:w-72 h-56 sm:h-auto relative bg-gray-200 flex-shrink-0 cursor-pointer" onclick="openPropertyModal('${p.id}')">
+                        <img src="${p.thumbnail}" alt="${p.title}" class="w-full h-full object-cover">
+                        <span class="absolute top-3 left-3 ${isSold ? 'bg-gray-600' : badgeColor} text-white text-xs font-bold px-2.5 py-1 rounded-md shadow uppercase">
+                            ${isSold ? 'SOLD / RENTED' : (p.type === 'sale' ? 'For Sale' : 'For Rent')}
+                        </span>
+                    </div>
+                    <div class="p-6 flex-grow flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span class="font-semibold text-brand uppercase tracking-wider"><i class="fa-solid fa-location-dot mr-1"></i> ${p.street}, ${p.city}, ${p.district}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium">By ${p.posterType}</span>
+                                    
+                                    ${isOwner ? `
+                                        <button type="button" onclick="verifyAndOpenEdit('${p.id}')" class="text-xs bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-lg font-bold transition flex items-center space-x-1 cursor-pointer">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                            <span>Edit Listing</span>
+                                        </button>
+                                    ` : `
+                                        <button type="button" onclick="verifyAndOpenEdit('${p.id}')" class="text-[11px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded cursor-pointer" title="Lister / Admin Login">
+                                            <i class="fa-solid fa-lock"></i>
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-lg hover:text-brand cursor-pointer mb-2" onclick="openPropertyModal('${p.id}')">${p.title}</h3>
+                            <div class="text-2xl font-black text-gray-900 mb-3">Rs. ${p.price.toLocaleString()} ${p.type === 'rent' ? '/month' : ''}</div>
+                            
+                            <div class="grid grid-cols-3 gap-2 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl border border-gray-100 mb-3">
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">Category</span><strong class="text-gray-800">${p.category}</strong></div>
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">BHK / Size</span><strong class="text-gray-800">${p.bhk !== 'N/A' ? p.bhk : p.sqft}</strong></div>
+                                <div><span class="block text-gray-400 font-semibold uppercase text-[10px]">Water Supply</span><strong class="text-gray-800">${p.waterType}</strong></div>
+                            </div>
+                            <p class="text-xs text-gray-600 line-clamp-2">${p.description}</p>
+                            
+                            ${isContacted ? `
+                                <div class="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex items-center justify-between">
+                                    <div>
+                                        <span class="block text-emerald-800 font-bold">👤 Owner: ${p.ownerName}</span>
+                                        <span class="text-emerald-700 font-semibold text-sm">📞 ${p.ownerPhone}</span>
+                                    </div>
+                                    <span class="bg-brand text-white px-2.5 py-1 rounded-md font-bold text-[10px]">Contacted ✓</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <button type="button" onclick="openPropertyModal('${p.id}')" class="text-brand text-sm font-semibold hover:underline flex items-center space-x-1 cursor-pointer">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                                <span>View Map & Details</span>
+                            </button>
+                            
+                            ${isSold ? `
+                                <span class="text-xs font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-xl">Listing Closed</span>
+                            ` : isContacted ? `
+                                <a href="tel:${p.ownerPhone}" class="bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-xl shadow transition flex items-center space-x-2">
+                                    <i class="fa-solid fa-phone"></i>
+                                    <span>Call Owner Now</span>
+                                </a>
+                            ` : `
+                                <button type="button" onclick="markInterested('${p.id}')" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-5 py-2 rounded-xl shadow transition flex items-center space-x-2 cursor-pointer">
+                                    <i class="fa-solid fa-heart"></i>
+                                    <span>I'm Interested</span>
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function verifyAndOpenEdit(id) {
+            const p = properties.find(item => item.id == id);
+            if(!p) return;
+
+            if(myListings[id]) {
+                openEditModal(p);
+            } else {
+                const enteredInput = prompt(`Enter Owner PIN or Admin Master Passcode to edit "${p.title}":`);
+                const ADMIN_MASTER_KEY = "admin123";
+
+                if(enteredInput === p.pin || enteredInput === ADMIN_MASTER_KEY) {
+                    if(enteredInput === ADMIN_MASTER_KEY) {
+                        showToast("Admin access granted via Master Key!");
+                    }
+                    myListings[id] = true;
+                    localStorage.setItem('myListings', JSON.stringify(myListings));
+                    openEditModal(p);
+                } else if(enteredInput !== null) {
+                    alert("Incorrect PIN or Master Passcode! Access denied.");
+                }
+            }
+        }
+
+        function adminQuickLogin() {
+            const key = prompt("Enter Admin Master Passcode:");
+            const ADMIN_MASTER_KEY = "admin123";
+            if(key === ADMIN_MASTER_KEY) {
+                properties.forEach(p => myListings[p.id] = true);
+                localStorage.setItem('myListings', JSON.stringify(myListings));
+                showToast("Admin Mode Active: You can now edit or delete any listing!");
+                applyFilters();
+            } else if(key !== null) {
+                alert("Incorrect Admin Master Key!");
+            }
+        }
+
+        function openEditModal(p) {
+            document.getElementById('editPropId').value = p.id;
+            document.getElementById('editStatus').value = p.status || 'Available';
+            document.getElementById('editPrice').value = p.price;
+            document.getElementById('editDescription').value = p.description;
+            document.getElementById('editPropertyModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editPropertyModal').classList.add('hidden');
+        }
+
+        function handleSaveEdit(e) {
+            e.preventDefault();
+            const id = document.getElementById('editPropId').value;
+            const status = document.getElementById('editStatus').value;
+            const price = Number(document.getElementById('editPrice').value);
+            const description = document.getElementById('editDescription').value;
+
+            db.collection("properties").doc(id).update({
+                status: status,
+                price: price,
+                description: description
+            }).then(() => {
+                closeEditModal();
+                showToast("Listing updated globally!");
+            }).catch(error => {
+                alert("Error updating: " + error.message);
+            });
+        }
+
+        function confirmDeleteListing() {
+            const id = document.getElementById('editPropId').value;
+            const p = properties.find(item => item.id == id);
+            if(!p) return;
+
+            const confirmInput = prompt(`Enter Owner PIN or Admin Master Key to confirm DELETION of "${p.title}":`);
+            const ADMIN_MASTER_KEY = "admin123";
+
+            if(confirmInput === p.pin || confirmInput === ADMIN_MASTER_KEY) {
+                db.collection("properties").doc(id).delete().then(() => {
+                    closeEditModal();
+                    showToast("Listing deleted globally.");
+                }).catch(error => {
+                    alert("Error deleting: " + error.message);
+                });
+            } else if(confirmInput !== null) {
+                alert("Incorrect PIN or Passcode! Deletion cancelled.");
+            }
+        }
+
+        function markInterested(id) {
+            clickedInterests[id] = true;
+            sessionStorage.setItem('interestedProps', JSON.stringify(clickedInterests));
+            showToast("Interest registered! Owner contact unlocked.");
+            applyFilters();
+            updateValleyMapMarkers(properties.filter(p => p.type === currentTab));
+        }
+
+        function updatePriceLabel(val) {
+            document
