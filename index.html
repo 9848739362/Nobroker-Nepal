@@ -319,7 +319,7 @@
                     <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-gray-600 uppercase mb-1">District <span class="text-red-500">*</span></label>
-                            <select id="postDistrict" onchange="updatePostCities(); centerMapOnDistrict();" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
+                            <select id="postDistrict" onchange="updatePostCities()" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
                                 <option value="">Select District</option>
                                 <option value="Kathmandu">Kathmandu</option>
                                 <option value="Lalitpur">Lalitpur</option>
@@ -327,8 +327,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">City / Mun. <span class="text-red-500">*</span></label>
-                            <select id="postCity" onchange="centerMapOnCity();" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">City <span class="text-red-500">*</span></label>
+                            <select id="postCity" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
                                 <option value="">Select District First</option>
                             </select>
                         </div>
@@ -387,11 +387,11 @@
                     <span class="text-[10px] text-amber-700">Remember this PIN. You will need it to edit or mark your listing as sold later.</span>
                 </div>
 
-                <!-- Map Picker -->
+                <!-- Map Picker (Easy Pinning) -->
                 <div class="space-y-1">
                     <div class="flex justify-between items-center">
                         <label class="block font-semibold text-xs text-gray-700">Pin Exact Location on Valley Map</label>
-                        <span class="text-[10px] text-brand font-bold">Auto-centers on selected Municipality!</span>
+                        <span class="text-[10px] text-brand font-bold">Drag marker or click anywhere on map</span>
                     </div>
                     <div id="mapPicker" class="w-full h-48 rounded-xl border border-gray-300 relative z-0"></div>
                 </div>
@@ -482,20 +482,6 @@
             "Bhaktapur": ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality", "Changunarayan Municipality"]
         };
 
-        const locationCoords = {
-            "Kathmandu": { lat: 27.7172, lng: 85.3240, zoom: 13 },
-            "Lalitpur": { lat: 27.6588, lng: 85.3247, zoom: 13 },
-            "Bhaktapur": { lat: 27.6710, lng: 85.4298, zoom: 13 },
-            "Kathmandu Metropolitan City": { lat: 27.7172, lng: 85.3240, zoom: 14 },
-            "Budhanilkantha Municipality": { lat: 27.7667, lng: 85.3611, zoom: 14 },
-            "Tokha Municipality": { lat: 27.7500, lng: 85.3167, zoom: 14 },
-            "Kirtipur Municipality": { lat: 27.6792, lng: 85.2764, zoom: 14 },
-            "Lalitpur Metropolitan City": { lat: 27.6588, lng: 85.3247, zoom: 14 },
-            "Godawari Municipality": { lat: 27.5956, lng: 85.3853, zoom: 14 },
-            "Bhaktapur Municipality": { lat: 27.6710, lng: 85.4298, zoom: 14 },
-            "Suryabinayak Municipality": { lat: 27.6431, lng: 85.4256, zoom: 14 }
-        };
-
         let properties = [];
         let clickedInterests = JSON.parse(sessionStorage.getItem('interestedProps') || '{}');
         let myListings = JSON.parse(localStorage.getItem('myListings') || '{}');
@@ -538,7 +524,14 @@
                     });
 
                     const marker = L.marker([p.lat, p.lng], { icon: customIcon }).addTo(valleyMap);
-                    marker.bindPopup(`<b>${p.title}</b><br>Rs. ${p.price.toLocaleString()}<br><button onclick="openPropertyModal('${p.id}')" class="text-brand font-bold underline mt-1">View Details</button>`);
+                    marker.bindPopup(`
+                        <div class="p-2 space-y-1 text-xs">
+                            <span class="font-bold uppercase text-[10px] ${p.type === 'sale' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'} px-1.5 py-0.5 rounded">${p.type} • ${p.category}</span>
+                            <h4 class="font-bold text-gray-900 text-sm">${p.title}</h4>
+                            <p class="text-brand font-black">Rs. ${p.price.toLocaleString()}</p>
+                            <button type="button" onclick="openPropertyModal('${p.id}')" class="mt-1 w-full bg-brand text-white py-1 px-2 rounded text-center font-semibold cursor-pointer">View Details</button>
+                        </div>
+                    `);
                     valleyMarkers.push(marker);
                 }
             });
@@ -582,28 +575,6 @@
                 valleyData[district].forEach(city => {
                     citySelect.innerHTML += `<option value="${city}">${city}</option>`;
                 });
-            }
-        }
-
-        function centerMapOnDistrict() {
-            const district = document.getElementById('postDistrict').value;
-            if(pickerMap && locationCoords[district]) {
-                const loc = locationCoords[district];
-                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
-                pickerMarker.setLatLng([loc.lat, loc.lng]);
-                selectedLat = loc.lat.toFixed(4);
-                selectedLng = loc.lng.toFixed(4);
-            }
-        }
-
-        function centerMapOnCity() {
-            const city = document.getElementById('postCity').value;
-            if(pickerMap && locationCoords[city]) {
-                const loc = locationCoords[city];
-                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
-                pickerMarker.setLatLng([loc.lat, loc.lng]);
-                selectedLat = loc.lat.toFixed(4);
-                selectedLng = loc.lng.toFixed(4);
             }
         }
 
@@ -833,8 +804,239 @@
             sessionStorage.setItem('interestedProps', JSON.stringify(clickedInterests));
             showToast("Interest registered! Owner contact unlocked.");
             applyFilters();
-            updateValleyMapMarkers(properties.filter(p => p.type === currentTab));
         }
 
         function updatePriceLabel(val) {
-            document
+            document.getElementById('priceLabel').innerText = `Rs. ${Number(val).toLocaleString()}`;
+        }
+
+        function resetFilters() {
+            document.getElementById('filterDistrict').value = "";
+            document.getElementById('filterCity').innerHTML = '<option value="">Select City</option>';
+            document.getElementById('filterCategory').value = "";
+            document.getElementById('filterBhk').value = "";
+            document.getElementById('priceRange').value = 100000000;
+            document.getElementById('sortBy').value = "relevance";
+            document.querySelectorAll('input[name="posterType"]').forEach(cb => cb.checked = false);
+            updatePriceLabel(100000000);
+            applyFilters();
+        }
+
+        function openPropertyModal(id) {
+            const p = properties.find(item => item.id == id);
+            if(!p) return;
+            const isContacted = clickedInterests[p.id];
+            const content = document.getElementById('modalContent');
+            const allModalImages = [p.thumbnail, ...(p.gallery || [])];
+            const imageGalleryHTML = allModalImages.map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl shadow border">`).join('');
+
+            content.innerHTML = `
+                <div class="p-6 space-y-6">
+                    <div>
+                        <span class="text-xs ${p.type === 'sale' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'} font-semibold px-2.5 py-1 rounded">${p.type.toUpperCase()} • ${p.category}</span>
+                        <h2 class="text-2xl font-black text-gray-900 mt-2">${p.title}</h2>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot text-brand mr-1"></i> ${p.street}, ${p.city}, ${p.district} District</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${imageGalleryHTML}
+                        </div>
+                        <div class="space-y-3">
+                            <div class="text-3xl font-black text-gray-900">Rs. ${p.price.toLocaleString()}</div>
+                            <p class="text-sm text-gray-600 leading-relaxed">${p.description}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-2 text-sm"><i class="fa-solid fa-map text-brand mr-1"></i> Map Pin Location</h4>
+                        <div id="detailMap" class="w-full h-56 rounded-xl border"></div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t">
+                        <div>
+                            <span class="block text-xs text-gray-400">Direct Owner</span>
+                            <strong class="text-gray-800 text-sm">${p.ownerName}</strong>
+                            ${isContacted ? `<span class="block text-emerald-700 font-bold text-xs mt-0.5">📞 ${p.ownerPhone}</span>` : ''}
+                        </div>
+                        ${isContacted ? `
+                            <a href="tel:${p.ownerPhone}" class="bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow transition">
+                                Call ${p.ownerPhone}
+                            </a>
+                        ` : `
+                            <button type="button" onclick="closePropertyModal(); markInterested('${p.id}');" class="bg-brand hover:bg-brand-dark text-white font-bold px-6 py-3 rounded-xl shadow transition cursor-pointer">
+                                I'm Interested & Unlock Contact
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            document.getElementById('propertyModal').classList.remove('hidden');
+
+            setTimeout(() => {
+                const map = L.map('detailMap').setView([p.lat, p.lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+                L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.title).openPopup();
+            }, 200);
+        }
+
+        function closePropertyModal() {
+            document.getElementById('propertyModal').classList.add('hidden');
+        }
+
+        function openPostPropertyModal() {
+            document.getElementById('postPropertyModal').classList.remove('hidden');
+            setTimeout(() => {
+                if(!pickerMap) {
+                    pickerMap = L.map('mapPicker').setView([27.7172, 85.3240], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(pickerMap);
+                    pickerMarker = L.marker([27.7172, 85.3240], { draggable: true }).addTo(pickerMap);
+                    pickerMarker.on('dragend', function(e) {
+                        const pos = pickerMarker.getLatLng();
+                        selectedLat = pos.lat.toFixed(4);
+                        selectedLng = pos.lng.toFixed(4);
+                    });
+                    pickerMap.on('click', function(e) {
+                        pickerMarker.setLatLng(e.latlng);
+                        selectedLat = e.latlng.lat.toFixed(4);
+                        selectedLng = e.latlng.lng.toFixed(4);
+                    });
+                } else {
+                    pickerMap.invalidateSize();
+                }
+            }, 200);
+        }
+
+        function closePostPropertyModal() {
+            document.getElementById('postPropertyModal').classList.add('hidden');
+        }
+
+        function handlePostProperty(e) {
+            e.preventDefault();
+            const btn = document.getElementById('publishBtn');
+            btn.disabled = true;
+            document.getElementById('publishBtnText').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Publishing your property...';
+            
+            const thumbInput = document.getElementById('postThumbnailFile').files[0];
+            const galleryInput = document.getElementById('postGalleryFiles').files;
+
+            let thumbURL = "https://placehold.co/600x400/059669/ffffff?text=Kathmandu+Property";
+            let galleryArr = [];
+
+            const processGallery = () => {
+                if (galleryInput && galleryInput.length > 0) {
+                    let readCount = 0;
+                    Array.from(galleryInput).forEach((file, index) => {
+                        compressImage(file, 500, 0.5, (compressedBase64) => {
+                            galleryArr[index] = compressedBase64;
+                            readCount++;
+                            if (readCount === galleryInput.length) {
+                                saveAndPublishToCloud(thumbURL, galleryArr);
+                            }
+                        });
+                    });
+                } else {
+                    saveAndPublishToCloud(thumbURL, galleryArr);
+                }
+            };
+
+            if (thumbInput) {
+                compressImage(thumbInput, 400, 0.5, (compressedThumb) => {
+                    thumbURL = compressedThumb;
+                    processGallery();
+                });
+            } else {
+                processGallery();
+            }
+        }
+
+        function compressImage(file, maxWidth, quality, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    callback(dataUrl);
+                };
+            };
+        }
+
+        function saveAndPublishToCloud(thumb, gallery) {
+            const chosenType = document.getElementById('postType').value;
+
+            const newProp = {
+                title: document.getElementById('postTitle').value,
+                type: chosenType,
+                category: document.getElementById('postCategory').value,
+                district: document.getElementById('postDistrict').value,
+                city: document.getElementById('postCity').value,
+                street: document.getElementById('postStreet').value,
+                bhk: document.getElementById('postBhk').value,
+                price: Number(document.getElementById('postPrice').value),
+                sqft: "1200 sq.ft",
+                waterType: document.getElementById('postWater').value,
+                posterType: "Owner",
+                ownerName: document.getElementById('postOwnerName').value,
+                ownerPhone: document.getElementById('postOwnerPhone').value,
+                pin: document.getElementById('postPin').value,
+                status: "Available",
+                lat: parseFloat(selectedLat),
+                lng: parseFloat(selectedLng),
+                thumbnail: thumb,
+                gallery: gallery,
+                description: document.getElementById('postDescription').value,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("properties").add(newProp).then((docRef) => {
+                myListings[docRef.id] = true;
+                localStorage.setItem('myListings', JSON.stringify(myListings));
+
+                closePostPropertyModal();
+                document.getElementById('postPropertyForm').reset();
+                document.getElementById('postCity').innerHTML = '<option value="">Select District First</option>';
+                
+                setSearchType(chosenType);
+                showToast("🎉 Your property is successfully published!");
+                document.getElementById('properties').scrollIntoView({ behavior: 'smooth' });
+            }).catch((error) => {
+                alert("Error saving property: " + error.message);
+            }).finally(() => {
+                const btn = document.getElementById('publishBtn');
+                if(btn) {
+                    btn.disabled = false;
+                    document.getElementById('publishBtnText').innerText = 'Publish Property Listing (FREE)';
+                }
+            });
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.add('hidden'); }, 3500);
+        }
+    </script>
+</body>
+</html>
