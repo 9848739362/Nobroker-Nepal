@@ -319,7 +319,7 @@
                     <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-gray-600 uppercase mb-1">District <span class="text-red-500">*</span></label>
-                            <select id="postDistrict" onchange="updatePostCities()" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
+                            <select id="postDistrict" onchange="updatePostCities(); centerMapOnDistrict();" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
                                 <option value="">Select District</option>
                                 <option value="Kathmandu">Kathmandu</option>
                                 <option value="Lalitpur">Lalitpur</option>
@@ -327,8 +327,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">City <span class="text-red-500">*</span></label>
-                            <select id="postCity" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
+                            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">City / Mun. <span class="text-red-500">*</span></label>
+                            <select id="postCity" onchange="centerMapOnCity();" required class="w-full border rounded-lg p-2 bg-white text-xs cursor-pointer">
                                 <option value="">Select District First</option>
                             </select>
                         </div>
@@ -387,11 +387,11 @@
                     <span class="text-[10px] text-amber-700">Remember this PIN. You will need it to edit or mark your listing as sold later.</span>
                 </div>
 
-                <!-- Map Picker (Easy Pinning) -->
+                <!-- Map Picker -->
                 <div class="space-y-1">
                     <div class="flex justify-between items-center">
                         <label class="block font-semibold text-xs text-gray-700">Pin Exact Location on Valley Map</label>
-                        <span class="text-[10px] text-brand font-bold">Drag marker or click anywhere on map</span>
+                        <span class="text-[10px] text-brand font-bold">Auto-centers on selected Municipality!</span>
                     </div>
                     <div id="mapPicker" class="w-full h-48 rounded-xl border border-gray-300 relative z-0"></div>
                 </div>
@@ -482,6 +482,20 @@
             "Bhaktapur": ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality", "Changunarayan Municipality"]
         };
 
+        const locationCoords = {
+            "Kathmandu": { lat: 27.7172, lng: 85.3240, zoom: 13 },
+            "Lalitpur": { lat: 27.6588, lng: 85.3247, zoom: 13 },
+            "Bhaktapur": { lat: 27.6710, lng: 85.4298, zoom: 13 },
+            "Kathmandu Metropolitan City": { lat: 27.7172, lng: 85.3240, zoom: 14 },
+            "Budhanilkantha Municipality": { lat: 27.7667, lng: 85.3611, zoom: 14 },
+            "Tokha Municipality": { lat: 27.7500, lng: 85.3167, zoom: 14 },
+            "Kirtipur Municipality": { lat: 27.6792, lng: 85.2764, zoom: 14 },
+            "Lalitpur Metropolitan City": { lat: 27.6588, lng: 85.3247, zoom: 14 },
+            "Godawari Municipality": { lat: 27.5956, lng: 85.3853, zoom: 14 },
+            "Bhaktapur Municipality": { lat: 27.6710, lng: 85.4298, zoom: 14 },
+            "Suryabinayak Municipality": { lat: 27.6431, lng: 85.4256, zoom: 14 }
+        };
+
         let properties = [];
         let clickedInterests = JSON.parse(sessionStorage.getItem('interestedProps') || '{}');
         let myListings = JSON.parse(localStorage.getItem('myListings') || '{}');
@@ -524,14 +538,20 @@
                     });
 
                     const marker = L.marker([p.lat, p.lng], { icon: customIcon }).addTo(valleyMap);
+                    
                     marker.bindPopup(`
-                        <div class="p-2 space-y-1 text-xs">
-                            <span class="font-bold uppercase text-[10px] ${p.type === 'sale' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'} px-1.5 py-0.5 rounded">${p.type} • ${p.category}</span>
-                            <h4 class="font-bold text-gray-900 text-sm">${p.title}</h4>
-                            <p class="text-brand font-black">Rs. ${p.price.toLocaleString()}</p>
-                            <button type="button" onclick="openPropertyModal('${p.id}')" class="mt-1 w-full bg-brand text-white py-1 px-2 rounded text-center font-semibold cursor-pointer">View Details</button>
+                        <div class="p-1 space-y-2 text-xs w-56">
+                            <img src="${p.thumbnail}" alt="${p.title}" class="w-full h-28 object-cover rounded-lg shadow-sm border">
+                            <div>
+                                <strong class="block font-bold text-gray-900 truncate">${p.title}</strong>
+                                <span class="text-brand font-black text-sm">Rs. ${p.price.toLocaleString()}</span>
+                            </div>
+                            <button type="button" onclick="openPropertyModal('${p.id}')" class="w-full bg-brand hover:bg-brand-dark text-white py-1.5 px-3 rounded-lg font-semibold text-center cursor-pointer shadow">
+                                View Full Details →
+                            </button>
                         </div>
                     `);
+
                     valleyMarkers.push(marker);
                 }
             });
@@ -575,6 +595,28 @@
                 valleyData[district].forEach(city => {
                     citySelect.innerHTML += `<option value="${city}">${city}</option>`;
                 });
+            }
+        }
+
+        function centerMapOnDistrict() {
+            const district = document.getElementById('postDistrict').value;
+            if(pickerMap && locationCoords[district]) {
+                const loc = locationCoords[district];
+                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
+                pickerMarker.setLatLng([loc.lat, loc.lng]);
+                selectedLat = loc.lat.toFixed(4);
+                selectedLng = loc.lng.toFixed(4);
+            }
+        }
+
+        function centerMapOnCity() {
+            const city = document.getElementById('postCity').value;
+            if(pickerMap && locationCoords[city]) {
+                const loc = locationCoords[city];
+                pickerMap.setView([loc.lat, loc.lng], loc.zoom);
+                pickerMarker.setLatLng([loc.lat, loc.lng]);
+                selectedLat = loc.lat.toFixed(4);
+                selectedLng = loc.lng.toFixed(4);
             }
         }
 
@@ -804,6 +846,7 @@
             sessionStorage.setItem('interestedProps', JSON.stringify(clickedInterests));
             showToast("Interest registered! Owner contact unlocked.");
             applyFilters();
+            updateValleyMapMarkers(properties.filter(p => p.type === currentTab));
         }
 
         function updatePriceLabel(val) {
@@ -830,6 +873,8 @@
             const allModalImages = [p.thumbnail, ...(p.gallery || [])];
             const imageGalleryHTML = allModalImages.map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl shadow border">`).join('');
 
+            const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+
             content.innerHTML = `
                 <div class="p-6 space-y-6">
                     <div>
@@ -849,7 +894,13 @@
                     </div>
 
                     <div>
-                        <h4 class="font-bold text-gray-800 mb-2 text-sm"><i class="fa-solid fa-map text-brand mr-1"></i> Map Pin Location</h4>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-map text-brand mr-1"></i> Pinned Property Location</h4>
+                            <a href="${directionsUrl}" target="_blank" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-1.5 rounded-lg shadow transition flex items-center space-x-1.5 cursor-pointer">
+                                <i class="fa-solid fa-diamond-turn-right"></i>
+                                <span>Get Directions</span>
+                            </a>
+                        </div>
                         <div id="detailMap" class="w-full h-56 rounded-xl border"></div>
                     </div>
 
