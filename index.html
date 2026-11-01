@@ -370,4 +370,117 @@
 
                 <!-- Separated Image Sections -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="space-y-
+                    <div class="space-y-2 bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-200">
+                        <label class="block font-bold text-xs text-emerald-900 uppercase">1. Thumbnail Image (Main Feed)</label>
+                        <input type="file" id="postThumbnailFile" accept="image/*" required class="w-full text-xs text-gray-500 file:py-1 file:px-2.5 file:rounded-lg file:bg-emerald-600 file:text-white cursor-pointer">
+                    </div>
+                    <div class="space-y-2 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
+                        <label class="block font-bold text-xs text-gray-700 uppercase">2. Gallery Images (Details)</label>
+                        <input type="file" id="postGalleryFiles" accept="image/*" multiple class="w-full text-xs text-gray-500 file:py-1 file:px-2.5 file:rounded-lg file:bg-gray-200 file:text-gray-700 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Security PIN for editing -->
+                <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 space-y-1">
+                    <label class="block font-bold text-xs text-amber-900 uppercase">Set Owner Edit Passcode / PIN <span class="text-red-500">*</span></label>
+                    <input type="password" id="postPin" required maxlength="6" placeholder="e.g. 1234" class="w-full border rounded-lg p-2 bg-white text-xs">
+                    <span class="text-[10px] text-amber-700">Remember this PIN. You will need it to edit or mark your listing as sold later.</span>
+                </div>
+
+                <!-- Map Picker (Easy Pinning) -->
+                <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                        <label class="block font-semibold text-xs text-gray-700">Pin Exact Location on Valley Map</label>
+                        <span class="text-[10px] text-brand font-bold">Auto-centers on selected Municipality!</span>
+                    </div>
+                    <div id="mapPicker" class="w-full h-48 rounded-xl border border-gray-300 relative z-0"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Owner Name</label>
+                        <input type="text" id="postOwnerName" required placeholder="Full Name" class="w-full border rounded-lg p-2.5 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 mb-1">Phone / WhatsApp <span class="text-red-500">*</span></label>
+                        <input type="text" id="postOwnerPhone" required placeholder="+977 9812345678" class="w-full border rounded-lg p-2.5 bg-gray-50">
+                    </div>
+                </div>
+
+                <button type="submit" id="publishBtn" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-1 cursor-pointer flex items-center justify-center space-x-2">
+                    <span id="publishBtnText">Publish Property Listing (FREE)</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Secure Lister Edit Suite -->
+    <div id="editPropertyModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-xl w-full max-h-[95vh] overflow-y-auto shadow-2xl p-6 relative">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-pen-to-square text-brand mr-2"></i> Edit Listing Suite</h3>
+                <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-700 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="editPropertyForm" onsubmit="handleSaveEdit(event)" class="space-y-4 text-sm">
+                <input type="hidden" id="editPropId">
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Listing Status</label>
+                    <select id="editStatus" class="w-full border rounded-lg p-2.5 bg-gray-50 cursor-pointer">
+                        <option value="Available">Available (Active)</option>
+                        <option value="Sold">Sold / Rented Out (Closed)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Price / Rent (NPR)</label>
+                    <input type="number" id="editPrice" required class="w-full border rounded-lg p-2.5 bg-gray-50">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 mb-1">Property Description</label>
+                    <textarea id="editDescription" rows="3" required class="w-full border rounded-lg p-2.5 bg-gray-50"></textarea>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="confirmDeleteListing()" class="bg-red-100 hover:bg-red-200 text-red-700 font-semibold text-xs px-4 py-2 rounded-lg transition cursor-pointer flex items-center space-x-1.5">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Delete Listing</span>
+                    </button>
+                </div>
+                <button type="submit" class="w-full bg-brand hover:bg-brand-dark text-white font-bold py-3 rounded-lg shadow transition mt-2 cursor-pointer">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl z-50 hidden text-sm font-medium transition-all">
+        <span id="toastMsg">Action completed successfully!</span>
+    </div>
+
+    <!-- Firebase SDK Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <!-- JavaScript Core & Firebase Cloud Logic -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB28oYM-vyrHRdumVDB9eAFSkeNC3Kag7o",
+            authDomain: "nobroker-nepal.firebaseapp.com",
+            projectId: "nobroker-nepal",
+            storageBucket: "nobroker-nepal.firebasestorage.app",
+            messagingSenderId: "406903368468",
+            appId: "1:406903368468:web:3e91d758a8bbc89b5b7001",
+            measurementId: "G-H5NHH8VWEV"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const valleyData = {
+            "Kathmandu": ["Kathmandu Metropolitan City", "Kirtipur Municipality", "Budhanilkantha Municipality", "Tokha Municipality", "Tarakeshwar Municipality", "Gokarneshwor Municipality", "Kageshwori Manohara Municipality", "Chandragiri Municipality", "Nagarjun Municipality", "Dakshinkali Municipality", "Shankharapur Municipality"],
+            "Lalitpur": ["Lalitpur Metropolitan City", "Godawari Municipality", "Mahalaxmi Municipality", "Konjyosom Rural Municipality", "Bagmati Rural Municipality", "Mahankal Rural Municipality"],
+            "Bhaktapur": ["Bhaktapur Municipality", "Madhyapur Thimi Municipality", "Suryabinayak Municipality", "Changunarayan Municipality"]
+        };
+
+        const locationCoords = {
+            "Kathmandu": { lat: 27.7172
